@@ -4,9 +4,12 @@
 // grains pushed there fall off the edge and are counted as lost.
 //
 // A cell holding at least `threshold` grains topples: it loses `spend` grains
-// and each neighbour direction receives `weight` grains. With the "keep" rule
-// spend is the sum of the weights (the remainder stays in the cell); with the
-// "vanish" rule spend equals the threshold (the remainder disappears).
+// and each neighbour direction receives `weight` grains. Normally spend is the
+// sum of the weights. When the threshold is higher, the "keep" rule leaves the
+// remainder in the cell and the "vanish" rule makes spend equal the threshold.
+// When the threshold is lower, toppling can leave a cell negative (owing
+// sand); that matches the usual rule on a floor pre-filled with
+// `sum - threshold` grains per cell.
 //
 // Only the bounding box of cells that toppled last time (plus a one-cell
 // margin) is scanned, since nothing outside it can have become unstable.
@@ -51,7 +54,7 @@ function compileRule(rule, width) {
     offOdd: Int32Array.from(odd, ([o]) => o),
     wOdd: Int32Array.from(odd, ([, w]) => w),
     threshold: rule.threshold,
-    spend: rule.extra === 'vanish' ? rule.threshold : sum,
+    spend: rule.extra === 'vanish' && rule.threshold > sum ? rule.threshold : sum,
   }
 }
 

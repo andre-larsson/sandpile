@@ -344,6 +344,15 @@ input[type="range"] {
   color: var(--muted);
 }
 
+.rule-note {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 200, 80, 0.45);
+  background: rgba(245, 200, 80, 0.1);
+  font-size: 0.85rem;
+}
+
 .notes p {
   margin: 0;
   max-width: 62rem;

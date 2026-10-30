@@ -6,12 +6,34 @@
 // nearest-neighbour sampling. Hex rows are drawn √3 times as tall as a buffer
 // pixel is wide, which makes the hexagonal grid come out evenly spaced.
 
+// `stops` colour heights 0 and up, `hot` marks cells about to topple, and
+// `owe` runs from the most negative height to -1 (cells that owe sand).
 export const PALETTES = {
-  dusk: { label: 'Dusk', stops: ['#0c0e28', '#285aa0', '#3cbec8', '#f5c850', '#faf5e6'], hot: '#ff4d8d' },
-  ember: { label: 'Ember', stops: ['#0b0507', '#5a1020', '#c8401c', '#f5a524', '#fff3c4'], hot: '#5ad1ff' },
-  ice: { label: 'Ice', stops: ['#06101c', '#123c6e', '#2f8fd8', '#8fe3ff', '#ffffff'], hot: '#ff7a3d' },
-  candy: { label: 'Candy', stops: ['#160b26', '#7b2d8e', '#e2508f', '#ffb36b', '#fff7d6'], hot: '#46f0c8' },
-  mono: { label: 'Mono', stops: ['#000000', '#ffffff'], hot: '#ff3b3b' },
+  dusk: {
+    label: 'Dusk',
+    stops: ['#0c0e28', '#285aa0', '#3cbec8', '#f5c850', '#faf5e6'],
+    hot: '#ff4d8d',
+    owe: ['#c0263d', '#f39a5a'],
+  },
+  ember: {
+    label: 'Ember',
+    stops: ['#0b0507', '#5a1020', '#c8401c', '#f5a524', '#fff3c4'],
+    hot: '#5ad1ff',
+    owe: ['#5b3fd1', '#b4a2ff'],
+  },
+  ice: {
+    label: 'Ice',
+    stops: ['#06101c', '#123c6e', '#2f8fd8', '#8fe3ff', '#ffffff'],
+    hot: '#ff7a3d',
+    owe: ['#b0236f', '#f07cb8'],
+  },
+  candy: {
+    label: 'Candy',
+    stops: ['#160b26', '#7b2d8e', '#e2508f', '#ffb36b', '#fff7d6'],
+    hot: '#46f0c8',
+    owe: ['#1f6fb5', '#7cc8f5'],
+  },
+  mono: { label: 'Mono', stops: ['#000000', '#ffffff'], hot: '#ff3b3b', owe: ['#1f4fc4', '#7fa8ff'] },
 }
 
 const HEX_ROW = Math.sqrt(3)
@@ -26,16 +48,24 @@ function packRgb([r, g, b]) {
   return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0
 }
 
-// Colours for heights 0 … levels-1, plus one for cells about to topple.
-export function paletteColors(name, levels) {
-  const { stops, hot } = PALETTES[name]
+function mix(a, b, f) {
+  return a.map((v, ch) => Math.round(v * (1 - f) + b[ch] * f))
+}
+
+// Colours for heights -owed … levels-1, plus one for cells about to topple.
+export function paletteColors(name, levels, owed = 0) {
+  const { stops, hot, owe } = PALETTES[name]
   const rgb = stops.map(hexToRgb)
+  const [deepest, shallowest] = owe.map(hexToRgb)
   const colors = []
+  for (let i = 0; i < owed; i++) {
+    colors.push(mix(deepest, shallowest, owed > 1 ? i / (owed - 1) : 1))
+  }
   for (let i = 0; i < levels; i++) {
     const t = (i / Math.max(levels - 1, 1)) * (rgb.length - 1)
     const j = Math.min(Math.floor(t), rgb.length - 2)
     const f = t - j
-    colors.push(rgb[j].map((v, ch) => Math.round(v * (1 - f) + rgb[j + 1][ch] * f)))
+    colors.push(mix(rgb[j], rgb[j + 1], f))
   }
   colors.push(hexToRgb(hot))
   return colors
@@ -81,8 +111,10 @@ export class Renderer {
   // threshold changes, and repaints everything after a reset.
   prepare(sim) {
     const hex = sim.rule.grid === 'hex'
-    const levels = sim.compiled.threshold
-    const key = `${sim.size}:${hex}:${this.palette}:${levels}:${sim.version}`
+    const { threshold: levels, spend } = sim.compiled
+    // Toppling below the number of grains given away can leave cells negative.
+    const owed = Math.max(0, spend - levels)
+    const key = `${sim.size}:${hex}:${this.palette}:${levels}:${owed}:${sim.version}`
     if (key === this.key) return
     const width = hex ? sim.size * 2 + 1 : sim.size
     if (this.buffer.width !== width || this.buffer.height !== sim.size || !this.image) {
@@ -91,10 +123,12 @@ export class Renderer {
       this.image = this.bufferCtx.createImageData(width, sim.size)
       this.pixels = new Uint32Array(this.image.data.buffer)
     }
-    const colors = paletteColors(this.palette, levels)
+    const colors = paletteColors(this.palette, levels, owed)
     this.lut = Uint32Array.from(colors, packRgb)
-    this.backgroundCss = `rgb(${colors[0].join(', ')})`
-    this.pixels.fill(this.lut[0])
+    this.offset = owed
+    this.threshold = levels
+    this.backgroundCss = `rgb(${colors[owed].join(', ')})`
+    this.pixels.fill(this.lut[owed])
     this.hex = hex
     this.key = key
     this.painted = -1
@@ -105,7 +139,7 @@ export class Renderer {
     if (this.painted === sim.changes && !this.fullRepaint) return
     const { size, h } = sim
     const { r0, r1, c0, c1 } = sim.sand
-    const { pixels, lut, hex } = this
+    const { pixels, lut, hex, offset, threshold } = this
     const top = lut.length - 1
     const width = this.buffer.width
     if (r0 <= r1) {
@@ -115,7 +149,7 @@ export class Renderer {
         const shift = r & 1
         for (let c = c0; c <= c1; c++) {
           const v = h[row + c]
-          const color = lut[v < top ? v : top]
+          const color = lut[v < threshold ? v + offset : top]
           if (hex) {
             const x = out + c * 2 + shift
             pixels[x] = color

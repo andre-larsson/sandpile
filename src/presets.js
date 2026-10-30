@@ -55,6 +55,14 @@ export const PRESETS = [
     piles: CENTRE_PILE,
   },
   {
+    id: 'owing',
+    name: 'Owing sand',
+    blurb: 'Topple at 2 but give away 4. Cells can go negative.',
+    rule: { ...CLASSIC_RULE, threshold: 2 },
+    size: 257,
+    piles: [[0.5, 0.5, 2 ** 14]],
+  },
+  {
     id: 'lopsided',
     name: 'Lopsided',
     blurb: '2 grains go east, 1 to the other sides. The pile drifts.',

@@ -266,6 +266,13 @@ function App() {
           keeps recurring, let it settle, and you get the same pile back.
         </p>
         <p>
+          The toppling number can also be lower than the number of grains a cell gives away. The
+          cell then drops below zero and owes sand. That is the same as the classic rule played on
+          a floor already covered with sand: toppling at 3 is a floor with 1 grain per cell,
+          toppling at 2 is a floor with 2. At 1 the floor is full, and any pile spreads until it
+          falls off the edge of the world.
+        </p>
+        <p>
           With <em>Avalanches</em>, single grains land on a box that is already full. Most cause
           tiny slides, a few set off huge ones, and the sizes follow a power law. Bak, Tang and
           Wiesenfeld introduced the model in 1987 to show this “self-organised criticality”.

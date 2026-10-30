@@ -23,12 +23,16 @@ function describeRule(rule) {
   const gifts = groups
     .map(([w, ds]) => `${plural(w, 'grain')} to ${ds.length > 1 ? 'each of ' : ''}${ds.map((d) => ARROWS[d]).join(' ')}`)
     .join(', ')
-  const extra = rule.threshold - weightSum(rule)
+  const sum = weightSum(rule)
+  const extra = rule.threshold - sum
   let rest = ''
   if (extra > 0) {
     rest = rule.extra === 'vanish'
       ? ` The other ${plural(extra, 'grain')} ${extra === 1 ? 'vanishes' : 'vanish'}.`
       : ` The other ${plural(extra, 'grain')} ${extra === 1 ? 'stays' : 'stay'} put.`
+  } else if (extra < 0) {
+    rest = ` Toppling takes ${plural(sum, 'grain')}, so a cell can drop to −${-extra} and owe sand.`
+      + ` This is the usual rule on a floor already covered with ${plural(-extra, 'grain')} per cell.`
   }
   return `A cell with ${rule.threshold} or more grains topples: ${gifts}.${rest}`
 }
@@ -69,7 +73,7 @@ export default function RuleEditor({ rule, onChange }) {
     const weights = { ...rule.weights, [dir]: value }
     const nextSum = weightSum({ ...rule, weights })
     // A threshold that matched the old total follows the new one.
-    const threshold = rule.threshold === sum ? nextSum : Math.max(rule.threshold, nextSum)
+    const threshold = rule.threshold === sum ? nextSum : rule.threshold
     onChange({ ...rule, weights, threshold })
   }
 
@@ -114,11 +118,11 @@ export default function RuleEditor({ rule, onChange }) {
 
       <label className="field">
         <span className="field-label">
-          Topple at <strong>{rule.threshold}</strong> grains
+          Topple at <strong>{rule.threshold}</strong> {rule.threshold === 1 ? 'grain' : 'grains'}
         </span>
         <input
           type="range"
-          min={sum}
+          min="1"
           max={sum + MAX_EXTRA}
           value={rule.threshold}
           onChange={(e) => onChange({ ...rule, threshold: Number(e.target.value) })}
@@ -148,6 +152,12 @@ export default function RuleEditor({ rule, onChange }) {
       )}
 
       <p className="rule-summary">{describeRule(rule)}</p>
+      {rule.threshold === 1 && sum > 1 && (
+        <p className="rule-note">
+          At 1 the floor is already full, so any sand sets off an avalanche that only stops at the
+          edge of the world. On a large world this can take a while.
+        </p>
+      )}
     </div>
   )
 }
