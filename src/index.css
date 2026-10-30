@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;700&family=Rajdhani:wght@500;700&display=swap');
+
+:root {
+  --bg: #050a18;
+  --panel: rgba(12, 22, 48, 0.88);
+  --panel-border: rgba(148, 212, 255, 0.28);
+  --text: #eef4ff;
+  --muted: rgba(214, 232, 255, 0.7);
+  --accent: #6fd3ff;
+  --accent-strong: #f5c850;
+  --control: rgba(20, 36, 72, 0.9);
+  --control-border: rgba(148, 212, 255, 0.35);
+
+  font-family: "Oxanium", "Trebuchet MS", sans-serif;
+  line-height: 1.45;
+  color: var(--text);
+  background-color: var(--bg);
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: clamp(1rem, 2.5vw, 2rem);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(111, 211, 255, 0.16), transparent 0 24%),
+    radial-gradient(circle at 85% 0%, rgba(245, 200, 80, 0.1), transparent 0 22%),
+    linear-gradient(180deg, #091428 0%, var(--bg) 60%);
+  background-attachment: fixed;
+}
+
+h1,
+h2 {
+  font-family: "Rajdhani", "Arial Narrow", sans-serif;
+  margin: 0;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--accent);
+}
